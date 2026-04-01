@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Commitment Savings Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="14" stroke="#00d4aa" stroke-width="2.5" fill="none"/>
+                        <path d="M10 20 L16 10 L22 20" stroke="#00d4aa" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Cloud Savings Calculator</h1>
+                    <p class="subtitle">Evaluate commitment strategies &amp; insured savings</p>
+                </div>
+            </div>
+            <button class="btn-assumptions" id="toggleAssumptions" aria-expanded="false" aria-controls="assumptionsPanel">
+                ⚙ Adjust Assumptions
+            </button>
+        </header>
+
+        <!-- Assumptions Panel -->
+        <div class="assumptions-panel" id="assumptionsPanel" hidden>
+            <h3>Model Assumptions</h3>
+            <p class="assumptions-note">Defaults based on published AWS discount ranges and typical Archera premium structures. Adjust to match your scenario.</p>
+            <div class="assumptions-grid">
+                <div class="assumption-group">
+                    <h4>Native AWS Discounts (% off On-Demand)</h4>
+                    <label>1-Year Savings Plan <input type="number" id="a_1yrSP" value="35" min="0" max="80" step="1"> %</label>
+                    <label>3-Year Savings Plan <input type="number" id="a_3yrSP" value="55" min="0" max="80" step="1"> %</label>
+                    <label>1-Year Reserved Instance <input type="number" id="a_1yrRI" value="40" min="0" max="80" step="1"> %</label>
+                    <label>3-Year Reserved Instance <input type="number" id="a_3yrRI" value="60" min="0" max="80" step="1"> %</label>
+                </div>
+                <div class="assumption-group">
+                    <h4>Archera Insured Commitments</h4>
+                    <label>GSP 30-Day Net Savings <input type="number" id="a_gsp30" value="22" min="0" max="60" step="1"> %</label>
+                    <label>GRI 30-Day Net Savings <input type="number" id="a_gri30" value="25" min="0" max="60" step="1"> %</label>
+                    <label>GSP 1-Year Net Savings <input type="number" id="a_gsp1yr" value="30" min="0" max="60" step="1"> %</label>
+                    <label>GRI 1-Year Net Savings <input type="number" id="a_gri1yr" value="35" min="0" max="60" step="1"> %</label>
+                    <label>Moneyback Recovery Rate <input type="number" id="a_moneyback" value="85" min="0" max="100" step="1"> %</label>
+                </div>
+                <div class="assumption-group">
+                    <h4>PPA / EDP Tiers</h4>
+                    <label>$500K–$1M Discount <input type="number" id="a_ppa1" value="5" min="0" max="30" step="0.5"> %</label>
+                    <label>$1M–$5M Discount <input type="number" id="a_ppa2" value="7" min="0" max="30" step="0.5"> %</label>
+                    <label>$5M–$10M Discount <input type="number" id="a_ppa3" value="10" min="0" max="30" step="0.5"> %</label>
+                    <label>$10M+ Discount <input type="number" id="a_ppa4" value="13" min="0" max="30" step="0.5"> %</label>
+                    <label>PPA Insurance Premium <input type="number" id="a_ppaPremium" value="2" min="0" max="15" step="0.5"> %</label>
+                </div>
+            </div>
+            <button class="btn-reset-assumptions" id="resetAssumptions">Reset to Defaults</button>
+        </div>
+
+        <!-- Sticky Input Bar (appears on scroll) -->
+        <div class="sticky-bar" id="stickyBar">
+            <div class="sticky-group">
+                <span class="sticky-label">Monthly Spend</span>
+                <input type="range" id="stickySpendSlider" min="10000" max="5000000" value="100000" step="5000" aria-label="Monthly spend (sticky)">
+                <span class="sticky-value" id="stickySpendValue">$100K</span>
+            </div>
+            <div class="sticky-divider"></div>
+            <div class="sticky-group">
+                <span class="sticky-label">Stability</span>
+                <span class="sticky-value" id="stickyStability">Steady</span>
+            </div>
+            <div class="sticky-divider"></div>
+            <div class="sticky-group">
+                <span class="sticky-label">Coverage</span>
+                <input type="range" id="stickyCoverageSlider" min="0" max="100" value="0" step="5" aria-label="Coverage (sticky)">
+                <span class="sticky-value" id="stickyCoverageValue">0%</span>
+            </div>
+        </div>
+
+        <!-- Step 1: Spend Input -->
+        <section class="step-section" id="step1">
+            <div class="step-badge">Step 1</div>
+            <h2>Tell us about your spend</h2>
+            <div class="input-card">
+                <div class="input-row">
+                    <label for="monthlySpend">Monthly AWS Spend</label>
+                    <div class="spend-input-group">
+                        <span class="currency">$</span>
+                        <input type="text" id="monthlySpend" value="100,000" inputmode="numeric" aria-label="Monthly AWS spend in dollars">
+                    </div>
+                    <input type="range" id="monthlySpendSlider" min="10000" max="5000000" value="100000" step="5000" aria-label="Monthly spend slider">
+                    <div class="range-labels"><span>$10K</span><span>$5M</span></div>
+                </div>
+                <div class="input-row">
+                    <label>How stable is your usage?</label>
+                    <div class="toggle-group" role="radiogroup" aria-label="Usage stability">
+                        <button class="toggle-btn active" data-value="steady" role="radio" aria-checked="true">Mostly Steady</button>
+                        <button class="toggle-btn" data-value="growing" role="radio" aria-checked="false">Growing / Shifting</button>
+                        <button class="toggle-btn" data-value="variable" role="radio" aria-checked="false">Highly Variable</button>
+                    </div>
+                </div>
+                <div class="input-row">
+                    <label for="currentCoverage">Current Commitment Coverage</label>
+                    <div class="coverage-input">
+                        <input type="range" id="currentCoverage" min="0" max="100" value="0" step="5" aria-label="Current commitment coverage percentage">
+                        <span class="coverage-value" id="coverageDisplay">0%</span>
+                    </div>
+                    <p class="input-hint">What percentage of your spend is already covered by SPs or RIs? Leave at 0% if unsure.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 2: Strategy Comparison -->
+        <section class="step-section" id="step2">
+            <div class="step-badge">Step 2</div>
+            <h2>Your savings landscape</h2>
+            <div class="strategies-container">
+                <div class="strategy-card" data-strategy="flexible">
+                    <div class="strategy-header">
+                        <div class="strategy-icon">🔄</div>
+                        <h3>Stay Flexible</h3>
+                        <span class="strategy-tag tag-low">Low Risk</span>
+                    </div>
+                    <p class="strategy-desc">Short-term insured commitments (GSPs &amp; GRIs). No lock-in, moneyback guarantee.</p>
+                    <div class="strategy-metrics">
+                        <div class="metric"><span class="metric-label">Annual Savings</span><span class="metric-value" id="flexSavings">$0</span></div>
+                        <div class="metric"><span class="metric-label">Net Savings Rate</span><span class="metric-value" id="flexRate">0%</span></div>
+                        <div class="metric"><span class="metric-label">Annual Cost</span><span class="metric-value secondary" id="flexCost">$0</span></div>
+                    </div>
+                    <div class="strategy-breakdown">
+                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>GSP vs GRI breakdown</span><span class="chevron">▸</span></div>
+                        <div class="breakdown-content" hidden>
+                            <div class="breakdown-row"><span>GSP (30-day, broad compute)</span><span id="flexGSP">$0/yr saved</span></div>
+                            <div class="breakdown-row"><span>GRI (30-day, specific instances)</span><span id="flexGRI">$0/yr saved</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="strategy-card featured" data-strategy="blended">
+                    <div class="featured-badge">Recommended</div>
+                    <div class="strategy-header">
+                        <div class="strategy-icon">🛡️</div>
+                        <h3>Commit with a Safety Net</h3>
+                        <span class="strategy-tag tag-balanced">Balanced</span>
+                    </div>
+                    <p class="strategy-desc">Native commitments for steady workloads + Archera insured commitments for variable spend.</p>
+                    <div class="strategy-metrics">
+                        <div class="metric"><span class="metric-label">Annual Savings</span><span class="metric-value" id="blendSavings">$0</span></div>
+                        <div class="metric"><span class="metric-label">Net Savings Rate</span><span class="metric-value" id="blendRate">0%</span></div>
+                        <div class="metric"><span class="metric-label">Annual Cost</span><span class="metric-value secondary" id="blendCost">$0</span></div>
+                    </div>
+                    <div class="strategy-breakdown">
+                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>Commitment mix details</span><span class="chevron">▸</span></div>
+                        <div class="breakdown-content" hidden>
+                            <div class="breakdown-row"><span>Native 1yr SP (steady portion)</span><span id="blendNative">$0/yr saved</span></div>
+                            <div class="breakdown-row"><span>Archera GSP (variable portion)</span><span id="blendArchera">$0/yr saved</span></div>
+                            <div class="breakdown-row"><span>Remaining On-Demand</span><span id="blendOD">$0/yr</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="strategy-card" data-strategy="ppa" id="ppaCard">
+                    <div class="strategy-header">
+                        <div class="strategy-icon">🏢</div>
+                        <h3>Go Big — PPA / EDP</h3>
+                        <span class="strategy-tag tag-enterprise">Enterprise</span>
+                    </div>
+                    <p class="strategy-desc">Volume discount via Private Pricing Agreement + Archera PPA Insurance against shortfall.</p>
+                    <div class="strategy-metrics">
+                        <div class="metric"><span class="metric-label">Annual Savings</span><span class="metric-value" id="ppaSavings">$0</span></div>
+                        <div class="metric"><span class="metric-label">Net Savings Rate</span><span class="metric-value" id="ppaRate">0%</span></div>
+                        <div class="metric"><span class="metric-label">PPA Tier</span><span class="metric-value secondary" id="ppaTier">—</span></div>
+                    </div>
+                    <div class="strategy-breakdown">
+                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>PPA + Insurance details</span><span class="chevron">▸</span></div>
+                        <div class="breakdown-content" hidden>
+                            <div class="breakdown-row"><span>PPA Discount</span><span id="ppaDiscount">$0/yr saved</span></div>
+                            <div class="breakdown-row"><span>Insurance Premium</span><span id="ppaPremiumCost">−$0/yr</span></div>
+                            <div class="breakdown-row"><span>Shortfall Protection</span><span id="ppaProtection">Up to $0</span></div>
+                        </div>
+                    </div>
+                    <p class="ppa-threshold-note" id="ppaNote" hidden>💡 PPA/EDP typically requires $500K+ annual spend. Increase your spend input to see this strategy.</p>
+                </div>
+            </div>
+            <div class="chart-section">
+                <h3>Annual Savings Comparison</h3>
+                <div class="chart-container"><canvas id="savingsChart" aria-label="Bar chart comparing annual savings across strategies"></canvas></div>
+            </div>
+        </section>
+
+        <!-- Step 3: Stress Test -->
+        <section class="step-section" id="step3">
+            <div class="step-badge">Step 3</div>
+            <h2>Stress test: what if usage changes?</h2>
+            <p class="step-intro">Drag the slider to see how each strategy performs when actual usage differs from your commitment.</p>
+            <div class="stress-test-container">
+                <div class="stress-slider-area">
+                    <label for="stressSlider">Usage Change</label>
+                    <input type="range" id="stressSlider" min="-50" max="50" value="0" step="5" aria-label="Usage change percentage">
+                    <div class="stress-labels"><span>−50%</span><span class="stress-current" id="stressValue">0% (no change)</span><span>+50%</span></div>
+                </div>
+                <div class="stress-results">
+                    <div class="stress-card"><h4>🔄 Stay Flexible</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressFlex">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressFlexBar"></div></div></div>
+                    <div class="stress-card"><h4>🛡️ Safety Net</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressBlend">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressBlendBar"></div></div></div>
+                    <div class="stress-card"><h4>🏢 PPA + Insurance</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressPPA">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressPPABar"></div></div></div>
+                    <div class="stress-card stress-native"><h4>📋 Native 1yr SP (no insurance)</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressNative">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressNativeBar"></div></div></div>
+                </div>
+                <div class="stress-chart-container"><canvas id="stressChart" aria-label="Chart showing savings under usage change scenarios"></canvas></div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <button class="btn-share" id="shareBtn">📋 Copy Shareable Link</button>
+            <div class="disclaimer">
+                <p>Estimates based on published AWS discount ranges and typical Archera premium structures. Actual savings depend on workload composition, region, instance families, payment options, and negotiated terms. This tool is for illustrative purposes — consult with Archera or your AWS account team for precise analysis.</p>
+                <p class="sources">Sources: <a href="https://aws.amazon.com/savingsplans/compute-pricing/" target="_blank" rel="noopener">AWS Savings Plans</a> · <a href="https://archera.ai/insured-commitments/" target="_blank" rel="noopener">Archera Insured Commitments</a> · <a href="https://archera.ai/aws-ppa-insurance/" target="_blank" rel="noopener">Archera PPA Insurance</a></p>
+            </div>
+        </footer>
+    </div>
+    <div class="toast" id="toast" hidden>Link copied to clipboard</div>
+    <script src="calculator.js"></script>
+</body>
+</html>
