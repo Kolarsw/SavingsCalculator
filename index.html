@@ -23,9 +23,12 @@
                     <p class="subtitle">Evaluate commitment strategies &amp; insured savings</p>
                 </div>
             </div>
-            <button class="btn-assumptions" id="toggleAssumptions" aria-expanded="false" aria-controls="assumptionsPanel">
-                ⚙ Adjust Assumptions
-            </button>
+            <div class="assumptions-area">
+                <button class="btn-assumptions" id="toggleAssumptions" aria-expanded="false" aria-controls="assumptionsPanel">
+                    ⚙ Adjust Assumptions
+                </button>
+                <p class="assumptions-hint">Customize discount rates, Archera premiums, and PPA tier thresholds.</p>
+            </div>
         </header>
 
         <!-- Assumptions Panel -->
@@ -63,9 +66,9 @@
         <!-- Sticky Input Bar (appears on scroll) -->
         <div class="sticky-bar" id="stickyBar">
             <div class="sticky-group">
-                <span class="sticky-label">Monthly Spend</span>
-                <input type="range" id="stickySpendSlider" min="10000" max="5000000" value="100000" step="5000" aria-label="Monthly spend (sticky)">
-                <span class="sticky-value" id="stickySpendValue">$100K</span>
+                <span class="sticky-label">Annual Spend</span>
+                <input type="range" id="stickySpendSlider" min="30000" max="50000000" value="250000" step="10000" aria-label="Annual spend (sticky)">
+                <span class="sticky-value" id="stickySpendValue">$250K</span>
             </div>
             <div class="sticky-divider"></div>
             <div class="sticky-group">
@@ -86,13 +89,13 @@
             <h2>Tell us about your spend</h2>
             <div class="input-card">
                 <div class="input-row">
-                    <label for="monthlySpend">Monthly AWS Spend</label>
+                    <label for="monthlySpend">Annual AWS Spend</label>
                     <div class="spend-input-group">
                         <span class="currency">$</span>
-                        <input type="text" id="monthlySpend" value="100,000" inputmode="numeric" aria-label="Monthly AWS spend in dollars">
+                        <input type="text" id="monthlySpend" value="250,000" inputmode="numeric" aria-label="Annual AWS spend in dollars">
                     </div>
-                    <input type="range" id="monthlySpendSlider" min="10000" max="5000000" value="100000" step="5000" aria-label="Monthly spend slider">
-                    <div class="range-labels"><span>$10K</span><span>$5M</span></div>
+                    <input type="range" id="monthlySpendSlider" min="30000" max="50000000" value="250000" step="10000" aria-label="Annual spend slider">
+                    <div class="range-labels"><span>$30K</span><span>$50M</span></div>
                 </div>
                 <div class="input-row">
                     <label>How stable is your usage?</label>
@@ -121,63 +124,147 @@
                 <div class="strategy-card" data-strategy="flexible">
                     <div class="strategy-header">
                         <div class="strategy-icon">🔄</div>
-                        <h3>Stay Flexible</h3>
+                        <h3>Archera Insured 30-Day</h3>
                         <span class="strategy-tag tag-low">Low Risk</span>
                     </div>
-                    <p class="strategy-desc">Short-term insured commitments (GSPs &amp; GRIs). No lock-in, moneyback guarantee.</p>
+                    <p class="strategy-desc">Use Archera's Guaranteed Savings Plans (GSPs) and Guaranteed Reserved Instances (GRIs) with 30-day terms instead of 1–3 year lock-ins. You get commitment-level discounts on all your uncovered spend, and if your usage drops, Archera's Moneyback Guarantee reimburses you for unused commitments.</p>
                     <div class="strategy-metrics">
                         <div class="metric"><span class="metric-label">Annual Savings</span><span class="metric-value" id="flexSavings">$0</span></div>
                         <div class="metric"><span class="metric-label">Net Savings Rate</span><span class="metric-value" id="flexRate">0%</span></div>
                         <div class="metric"><span class="metric-label">Annual Cost</span><span class="metric-value secondary" id="flexCost">$0</span></div>
                     </div>
+                    <div class="aws-comparison">
+                        <div class="aws-compare-header">What if usage drops 20%?</div>
+                        <div class="aws-compare-row"><span>AWS native 1yr SP — you're locked in</span><span class="aws-val aws-without" id="flexAwsDrop">$0 lost</span></div>
+                        <div class="aws-compare-row"><span>Archera 30-day — Moneyback kicks in</span><span class="aws-val aws-with" id="flexArcheraDrop">$0 recovered</span></div>
+                        <div class="aws-compare-diff" id="flexDifference">$0 better off with Archera</div>
+                    </div>
                     <div class="strategy-breakdown">
-                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>GSP vs GRI breakdown</span><span class="chevron">▸</span></div>
+                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>📊 See what Archera changes for you</span><span class="chevron">▸</span></div>
                         <div class="breakdown-content" hidden>
-                            <div class="breakdown-row"><span>GSP (30-day, broad compute)</span><span id="flexGSP">$0/yr saved</span></div>
-                            <div class="breakdown-row"><span>GRI (30-day, specific instances)</span><span id="flexGRI">$0/yr saved</span></div>
+                            <div class="breakdown-detail">
+                                <div class="breakdown-compare">
+                                    <div class="compare-col compare-without">
+                                        <span class="compare-heading">Without Archera</span>
+                                        <p>You'd need a 1-year or 3-year AWS Savings Plan or Reserved Instance to get any discount. If your usage drops mid-term, you're still paying for the full commitment with no way out.</p>
+                                    </div>
+                                    <div class="compare-col compare-with">
+                                        <span class="compare-heading">With Archera</span>
+                                        <p>GSPs and GRIs give you the same type of discounts but on 30-day terms. If usage drops, the Moneyback Guarantee reimburses you — you're never stuck paying for capacity you don't need.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="breakdown-items">
+                                <div class="cost-breakdown-table">
+                                    <div class="cbd-header">Your Annual Spend Breakdown</div>
+                                    <div class="cbd-row"><span>Total On-Demand (if you did nothing)</span><span class="cbd-val" id="flexOnDemand">$0</span></div>
+                                    <div class="cbd-row cbd-save"><span>GSP savings (broad compute coverage)</span><span class="cbd-val cbd-green" id="flexGSP">$0</span></div>
+                                    <div class="cbd-row cbd-save"><span>GRI savings (instance-specific coverage)</span><span class="cbd-val cbd-green" id="flexGRI">$0</span></div>
+                                    <div class="cbd-row"><span>Archera premium</span><span class="cbd-val cbd-note">Included in net savings rate</span></div>
+                                    <div class="cbd-row cbd-total"><span>You pay</span><span class="cbd-val" id="flexProjected">$0</span></div>
+                                    <div class="cbd-row cbd-total cbd-savings"><span>You keep</span><span class="cbd-val" id="flexTotalSaved">$0</span></div>
+                                </div>
+                                <div class="breakdown-row highlight"><span>Commitment term</span><span>30 days (vs. 1–3 years native)</span></div>
+                                <div class="breakdown-row highlight"><span>Downside protection</span><span>Moneyback Guarantee on underutilization</span></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="strategy-card featured" data-strategy="blended">
-                    <div class="featured-badge">Recommended</div>
+                <div class="strategy-card" data-strategy="blended">
                     <div class="strategy-header">
                         <div class="strategy-icon">🛡️</div>
-                        <h3>Commit with a Safety Net</h3>
+                        <h3>AWS Native + Archera Insured</h3>
                         <span class="strategy-tag tag-balanced">Balanced</span>
                     </div>
-                    <p class="strategy-desc">Native commitments for steady workloads + Archera insured commitments for variable spend.</p>
+                    <p class="strategy-desc">Lock in AWS native 1-year Savings Plans for your predictable, steady-state workloads to maximize discount rates. Then layer Archera GSPs on top for the variable portion of your spend that's too risky to commit long-term — giving you coverage across your entire footprint with Archera's Moneyback Guarantee protecting the uncertain parts.</p>
                     <div class="strategy-metrics">
                         <div class="metric"><span class="metric-label">Annual Savings</span><span class="metric-value" id="blendSavings">$0</span></div>
                         <div class="metric"><span class="metric-label">Net Savings Rate</span><span class="metric-value" id="blendRate">0%</span></div>
                         <div class="metric"><span class="metric-label">Annual Cost</span><span class="metric-value secondary" id="blendCost">$0</span></div>
                     </div>
+                    <div class="aws-comparison">
+                        <div class="aws-compare-header">What if usage drops 20%?</div>
+                        <div class="aws-compare-row"><span>AWS native 1yr SP — you're locked in</span><span class="aws-val aws-without" id="blendAwsDrop">$0 lost</span></div>
+                        <div class="aws-compare-row"><span>Native + Archera — partial Moneyback</span><span class="aws-val aws-with" id="blendArcheraDrop">$0 recovered</span></div>
+                        <div class="aws-compare-diff" id="blendDifference">$0 better off with Archera</div>
+                    </div>
                     <div class="strategy-breakdown">
-                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>Commitment mix details</span><span class="chevron">▸</span></div>
+                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>📊 See how the commitment mix works</span><span class="chevron">▸</span></div>
                         <div class="breakdown-content" hidden>
-                            <div class="breakdown-row"><span>Native 1yr SP (steady portion)</span><span id="blendNative">$0/yr saved</span></div>
-                            <div class="breakdown-row"><span>Archera GSP (variable portion)</span><span id="blendArchera">$0/yr saved</span></div>
-                            <div class="breakdown-row"><span>Remaining On-Demand</span><span id="blendOD">$0/yr</span></div>
+                            <div class="breakdown-detail">
+                                <div class="breakdown-compare">
+                                    <div class="compare-col compare-without">
+                                        <span class="compare-heading">Native AWS Only</span>
+                                        <p>You'd commit all your spend to 1-year Savings Plans. Great discount on steady workloads, but you're locked in on everything — including the variable spend that might not be there in 6 months.</p>
+                                    </div>
+                                    <div class="compare-col compare-with">
+                                        <span class="compare-heading">Native + Archera</span>
+                                        <p>Use AWS Savings Plans where it makes sense (steady workloads), then Archera GSPs for the rest. Your predictable spend gets the best native rate, and your variable spend gets insured coverage instead of risky long-term lock-in.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="breakdown-items">
+                                <div class="cost-breakdown-table">
+                                    <div class="cbd-header">Your Annual Spend Breakdown</div>
+                                    <div class="cbd-row"><span>Total On-Demand (if you did nothing)</span><span class="cbd-val" id="blendOnDemand">$0</span></div>
+                                    <div class="cbd-row cbd-save"><span>AWS 1yr SP savings (steady workloads)</span><span class="cbd-val cbd-green" id="blendNative">$0</span></div>
+                                    <div class="cbd-row cbd-save"><span>Archera GSP savings (variable workloads)</span><span class="cbd-val cbd-green" id="blendArchera">$0</span></div>
+                                    <div class="cbd-row"><span>Remaining On-Demand (uncoverable)</span><span class="cbd-val cbd-note" id="blendOD">$0</span></div>
+                                    <div class="cbd-row cbd-total"><span>You pay</span><span class="cbd-val" id="blendProjected">$0</span></div>
+                                    <div class="cbd-row cbd-total cbd-savings"><span>You keep</span><span class="cbd-val" id="blendTotalSaved">$0</span></div>
+                                </div>
+                                <div class="breakdown-row highlight"><span>Archera value-add</span><span>Moneyback on variable portion if usage drops</span></div>
+                                <div class="breakdown-row highlight"><span>Native commitment risk</span><span>Steady portion locked for 1 year (no protection)</span></div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="strategy-card" data-strategy="ppa" id="ppaCard">
                     <div class="strategy-header">
                         <div class="strategy-icon">🏢</div>
-                        <h3>Go Big — PPA / EDP</h3>
+                        <h3>Archera PPA Insurance</h3>
                         <span class="strategy-tag tag-enterprise">Enterprise</span>
                     </div>
-                    <p class="strategy-desc">Volume discount via Private Pricing Agreement + Archera PPA Insurance against shortfall.</p>
+                    <p class="strategy-desc">Negotiate an AWS Private Pricing Agreement (PPA/EDP) for volume-based discounts on your entire bill, then use Archera's PPA Insurance to protect against shortfall. If your actual spend falls below the committed minimum, Archera covers the gap — letting you commit more aggressively for a bigger discount without the downside risk.</p>
                     <div class="strategy-metrics">
                         <div class="metric"><span class="metric-label">Annual Savings</span><span class="metric-value" id="ppaSavings">$0</span></div>
                         <div class="metric"><span class="metric-label">Net Savings Rate</span><span class="metric-value" id="ppaRate">0%</span></div>
                         <div class="metric"><span class="metric-label">PPA Tier</span><span class="metric-value secondary" id="ppaTier">—</span></div>
                     </div>
+                    <div class="aws-comparison">
+                        <div class="aws-compare-header">What if spend falls 20% below PPA commitment?</div>
+                        <div class="aws-compare-row"><span>PPA without insurance — you owe the shortfall</span><span class="aws-val aws-without" id="ppaAwsDrop">$0 penalty</span></div>
+                        <div class="aws-compare-row"><span>PPA with Archera — insurance covers it</span><span class="aws-val aws-with" id="ppaArcheraDrop">$0 covered</span></div>
+                        <div class="aws-compare-diff" id="ppaDifference">$0 protected by Archera</div>
+                    </div>
                     <div class="strategy-breakdown">
-                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>PPA + Insurance details</span><span class="chevron">▸</span></div>
+                        <div class="breakdown-toggle" role="button" tabindex="0" aria-expanded="false"><span>📊 See how PPA Insurance protects you</span><span class="chevron">▸</span></div>
                         <div class="breakdown-content" hidden>
-                            <div class="breakdown-row"><span>PPA Discount</span><span id="ppaDiscount">$0/yr saved</span></div>
-                            <div class="breakdown-row"><span>Insurance Premium</span><span id="ppaPremiumCost">−$0/yr</span></div>
-                            <div class="breakdown-row"><span>Shortfall Protection</span><span id="ppaProtection">Up to $0</span></div>
+                            <div class="breakdown-detail">
+                                <div class="breakdown-compare">
+                                    <div class="compare-col compare-without">
+                                        <span class="compare-heading">PPA Without Insurance</span>
+                                        <p>You negotiate a spend commitment with AWS for a volume discount. If your actual spend falls short of the minimum, you owe the difference — which often leads companies to undercommit and leave discount money on the table.</p>
+                                    </div>
+                                    <div class="compare-col compare-with">
+                                        <span class="compare-heading">PPA With Archera Insurance</span>
+                                        <p>Archera insures your PPA commitment. Commit aggressively for the maximum discount tier, and if you fall short, Archera covers the shortfall. You get the bigger discount without the risk of overpaying.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="breakdown-items">
+                                <div class="cost-breakdown-table">
+                                    <div class="cbd-header">Your Annual Spend Breakdown</div>
+                                    <div class="cbd-row"><span>Total On-Demand (if you did nothing)</span><span class="cbd-val" id="ppaOnDemand">$0</span></div>
+                                    <div class="cbd-row cbd-save"><span>PPA/EDP volume discount</span><span class="cbd-val cbd-green" id="ppaDiscount">$0</span></div>
+                                    <div class="cbd-row"><span>Archera insurance premium</span><span class="cbd-val cbd-red" id="ppaPremiumCost">$0</span></div>
+                                    <div class="cbd-row"><span>Shortfall protection</span><span class="cbd-val cbd-note" id="ppaProtection">Up to $0</span></div>
+                                    <div class="cbd-row cbd-total"><span>You pay</span><span class="cbd-val" id="ppaProjected">$0</span></div>
+                                    <div class="cbd-row cbd-total cbd-savings"><span>You keep</span><span class="cbd-val" id="ppaTotalSaved">$0</span></div>
+                                </div>
+                                <div class="breakdown-row highlight"><span>Archera value-add</span><span>Commit higher, get bigger discount, risk covered</span></div>
+                                <div class="breakdown-row highlight"><span>Without insurance</span><span>Companies undercommit to avoid shortfall penalties</span></div>
+                            </div>
                         </div>
                     </div>
                     <p class="ppa-threshold-note" id="ppaNote" hidden>💡 PPA/EDP typically requires $500K+ annual spend. Increase your spend input to see this strategy.</p>
@@ -201,9 +288,9 @@
                     <div class="stress-labels"><span>−50%</span><span class="stress-current" id="stressValue">0% (no change)</span><span>+50%</span></div>
                 </div>
                 <div class="stress-results">
-                    <div class="stress-card"><h4>🔄 Stay Flexible</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressFlex">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressFlexBar"></div></div></div>
-                    <div class="stress-card"><h4>🛡️ Safety Net</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressBlend">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressBlendBar"></div></div></div>
-                    <div class="stress-card"><h4>🏢 PPA + Insurance</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressPPA">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressPPABar"></div></div></div>
+                    <div class="stress-card"><h4>🔄 Archera 30-Day</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressFlex">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressFlexBar"></div></div></div>
+                    <div class="stress-card"><h4>🛡️ Native + Archera</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressBlend">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressBlendBar"></div></div></div>
+                    <div class="stress-card"><h4>🏢 PPA Insurance</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressPPA">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressPPABar"></div></div></div>
                     <div class="stress-card stress-native"><h4>📋 Native 1yr SP (no insurance)</h4><div class="stress-metric"><span class="stress-outcome positive" id="stressNative">$0</span><span class="stress-label-text">net savings</span></div><div class="stress-bar-container"><div class="stress-bar" id="stressNativeBar"></div></div></div>
                 </div>
                 <div class="stress-chart-container"><canvas id="stressChart" aria-label="Chart showing savings under usage change scenarios"></canvas></div>
@@ -212,7 +299,6 @@
 
         <!-- Footer -->
         <footer class="app-footer">
-            <button class="btn-share" id="shareBtn">📋 Copy Shareable Link</button>
             <div class="disclaimer">
                 <p>Estimates based on published AWS discount ranges and typical Archera premium structures. Actual savings depend on workload composition, region, instance families, payment options, and negotiated terms. This tool is for illustrative purposes — consult with Archera or your AWS account team for precise analysis.</p>
                 <p class="sources">Sources: <a href="https://aws.amazon.com/savingsplans/compute-pricing/" target="_blank" rel="noopener">AWS Savings Plans</a> · <a href="https://archera.ai/insured-commitments/" target="_blank" rel="noopener">Archera Insured Commitments</a> · <a href="https://archera.ai/aws-ppa-insurance/" target="_blank" rel="noopener">Archera PPA Insurance</a></p>

@@ -43,8 +43,7 @@
 
     // ===== Core Calculation =====
     function calculate() {
-        const monthly = parseSpend(monthlyInput.value);
-        const annual = monthly * 12;
+        const annual = parseSpend(monthlyInput.value);
         const currentCoverage = parseInt(coverageSlider.value, 10) / 100;
         const profile = STABILITY[stability];
         const uncoveredAnnual = annual * (1 - currentCoverage);
@@ -97,22 +96,94 @@
         $('flexSavings').textContent = fmtFull(flexTotalSavings);
         $('flexRate').textContent = pct(flexNetRate);
         $('flexCost').textContent = fmtFull(flexAnnualCost);
-        $('flexGSP').textContent = fmtFull(flexGSPSavings) + '/yr saved';
-        $('flexGRI').textContent = fmtFull(flexGRISavings) + '/yr saved';
+        $('flexGSP').textContent = fmtFull(flexGSPSavings) + ' saved';
+        $('flexGRI').textContent = fmtFull(flexGRISavings) + ' saved';
+        $('flexOnDemand').textContent = fmtFull(annual);
+        $('flexProjected').textContent = fmtFull(flexAnnualCost);
+        $('flexTotalSaved').textContent = fmtFull(flexTotalSavings);
 
         $('blendSavings').textContent = fmtFull(blendTotalSavings);
         $('blendRate').textContent = pct(blendNetRate);
         $('blendCost').textContent = fmtFull(blendAnnualCost);
-        $('blendNative').textContent = fmtFull(blendNativeSavings) + '/yr saved';
-        $('blendArchera').textContent = fmtFull(blendArcheraSavings) + '/yr saved';
-        $('blendOD').textContent = fmtFull(uncoverableSpend) + '/yr';
+        $('blendNative').textContent = fmtFull(blendNativeSavings) + ' saved';
+        $('blendArchera').textContent = fmtFull(blendArcheraSavings) + ' saved';
+        $('blendOD').textContent = fmtFull(uncoverableSpend);
+        $('blendOnDemand').textContent = fmtFull(annual);
+        $('blendProjected').textContent = fmtFull(blendAnnualCost);
+        $('blendTotalSaved').textContent = fmtFull(blendTotalSavings);
 
         $('ppaSavings').textContent = fmtFull(Math.max(0, ppaNetSavings));
         $('ppaRate').textContent = pct(Math.max(0, ppaNetRate));
         $('ppaTier').textContent = ppaTier.label;
-        $('ppaDiscount').textContent = fmtFull(ppaGrossSavings) + '/yr saved';
-        $('ppaPremiumCost').textContent = '−' + fmtFull(ppaPremiumCost) + '/yr';
+        $('ppaDiscount').textContent = fmtFull(ppaGrossSavings) + ' saved';
+        $('ppaPremiumCost').textContent = fmtFull(ppaPremiumCost);
         $('ppaProtection').textContent = 'Up to ' + fmtFull(ppaShortfallProtection);
+        $('ppaOnDemand').textContent = fmtFull(annual);
+        $('ppaProjected').textContent = fmtFull(annual - Math.max(0, ppaNetSavings));
+        $('ppaTotalSaved').textContent = fmtFull(Math.max(0, ppaNetSavings));
+
+        // "What if usage drops 20%?" comparison — shows Archera's insurance value
+        var dropPct = 0.20;
+        var rMoneyback = getA('a_moneyback');
+
+        // Card 1: Flex — native loses savings, Archera gets moneyback
+        var nativeDropLoss = committable * dropPct * r1yrSP;
+        var flexDropLoss = committable * dropPct * ((rGsp30 * 0.6) + (rGri30 * 0.4));
+        var flexDropRecovery = flexDropLoss * rMoneyback;
+        $('flexAwsDrop').textContent = fmtFull(nativeDropLoss) + ' at risk';
+        $('flexArcheraDrop').textContent = fmtFull(flexDropRecovery) + ' risk mitigated';
+        $('flexDifference').textContent = fmtFull(flexDropRecovery + nativeDropLoss) + ' in protected value';
+
+        // Card 2: Blend — native portion loses, Archera portion gets moneyback
+        var blendNativeDropLoss = steadySpend * dropPct * r1yrSP;
+        var blendArcheraDropLoss = variableSpend * dropPct * rGsp1yr;
+        var blendArcheraRecovery = blendArcheraDropLoss * rMoneyback;
+        var blendTotalLossNativeOnly = (steadySpend + variableSpend) * dropPct * r1yrSP;
+        $('blendAwsDrop').textContent = fmtFull(blendTotalLossNativeOnly) + ' at risk';
+        $('blendArcheraDrop').textContent = fmtFull(blendArcheraRecovery) + ' risk mitigated';
+        $('blendDifference').textContent = fmtFull(blendArcheraRecovery + blendTotalLossNativeOnly - blendNativeDropLoss) + ' in protected value';
+
+        // Card 3: PPA — shortfall penalty vs insurance coverage
+        var ppaShortfall = annual * dropPct;
+        var ppaShortfallPenalty = ppaShortfall * ppaTier.rate;
+        var ppaInsuranceCoverage = ppaShortfallPenalty * rMoneyback;
+        $('ppaAwsDrop').textContent = fmtFull(ppaShortfallPenalty) + ' at risk';
+        $('ppaArcheraDrop').textContent = fmtFull(ppaInsuranceCoverage) + ' risk mitigated';
+        $('ppaDifference').textContent = fmtFull(ppaInsuranceCoverage) + ' in protected value';
+
+        // Dynamic recommendation — weight by stability and spend level
+        var flexScore = flexTotalSavings;
+        var blendScore = blendTotalSavings;
+        var ppaScore = annual >= 500000 ? Math.max(0, ppaNetSavings) : 0;
+
+        if (stability === 'variable') { flexScore *= 1.4; blendScore *= 0.9; }
+        if (stability === 'growing') { flexScore *= 1.15; }
+        if (stability === 'steady' && annual >= 1000000) { ppaScore *= 1.3; }
+        if (annual >= 5000000) { ppaScore *= 1.2; }
+
+        var strategies = [
+            { key: 'flexible', score: flexScore },
+            { key: 'blended', score: blendScore },
+            { key: 'ppa', score: ppaScore }
+        ];
+        strategies.sort(function (a, b) { return b.score - a.score; });
+        var bestKey = strategies[0].key;
+
+        document.querySelectorAll('.strategy-card').forEach(function (card) {
+            var badge = card.querySelector('.featured-badge');
+            if (card.dataset.strategy === bestKey) {
+                card.classList.add('featured');
+                if (!badge) {
+                    badge = document.createElement('div');
+                    badge.className = 'featured-badge';
+                    badge.textContent = 'Recommended';
+                    card.appendChild(badge);
+                }
+            } else {
+                card.classList.remove('featured');
+                if (badge) badge.remove();
+            }
+        });
 
         updateSavingsChart(flexTotalSavings, blendTotalSavings, Math.max(0, ppaNetSavings), annual);
         updateStressTest();
@@ -131,7 +202,7 @@
     function updateSavingsChart(flex, blend, ppa, annual) {
         const ctx = $('savingsChart');
         const data = {
-            labels: ['Stay Flexible\n(GSP + GRI)', 'Safety Net\n(Native + Archera)', 'PPA + Insurance'],
+            labels: ['Archera 30-Day\n(GSP + GRI)', 'Native + Archera\n(SP + GSP)', 'PPA Insurance'],
             datasets: [{
                 label: 'Annual Savings',
                 data: [flex, blend, ppa],
@@ -174,8 +245,7 @@
 
     // ===== Stress Test =====
     function updateStressTest() {
-        const monthly = parseSpend(monthlyInput.value);
-        const annual = monthly * 12;
+        const annual = parseSpend(monthlyInput.value);
         const usageChange = parseInt(stressSlider.value, 10) / 100;
         const currentCoverage = parseInt(coverageSlider.value, 10) / 100;
         const profile = STABILITY[stability];
@@ -261,7 +331,7 @@
     function updateStressChart(flex, blend, ppa, native) {
         const ctx = $('stressChart');
         const data = {
-            labels: ['Stay Flexible', 'Safety Net', 'PPA + Insurance', 'Native Only (no insurance)'],
+            labels: ['Archera 30-Day', 'Native + Archera', 'PPA Insurance', 'Native Only (no insurance)'],
             datasets: [{
                 label: 'Net Savings Under Stress',
                 data: [flex, blend, ppa, native],
@@ -297,7 +367,7 @@
     // ===== Event Handlers =====
     monthlyInput.addEventListener('input', function () {
         var val = parseSpend(this.value);
-        monthlySlider.value = Math.min(val, 5000000);
+        monthlySlider.value = Math.min(val, 50000000);
         this.value = val.toLocaleString('en-US');
         calculate();
     });
@@ -353,25 +423,6 @@
         calculate();
     });
 
-    $('shareBtn').addEventListener('click', function () {
-        var state = {
-            s: parseSpend(monthlyInput.value),
-            st: stability,
-            c: coverageSlider.value,
-            str: stressSlider.value
-        };
-        Object.keys(DEFAULTS).forEach(function (key) {
-            var el = $(key);
-            if (el && parseFloat(el.value) !== DEFAULTS[key]) state[key] = el.value;
-        });
-        var hash = btoa(JSON.stringify(state));
-        var url = window.location.origin + window.location.pathname + '#' + hash;
-        navigator.clipboard.writeText(url).then(function () {
-            var toast = $('toast');
-            toast.hidden = false;
-            setTimeout(function () { toast.hidden = true; }, 2500);
-        });
-    });
 
     function loadFromHash() {
         if (!window.location.hash) return;
@@ -379,7 +430,7 @@
             var state = JSON.parse(atob(window.location.hash.slice(1)));
             if (state.s) {
                 monthlyInput.value = state.s.toLocaleString('en-US');
-                monthlySlider.value = Math.min(state.s, 5000000);
+                monthlySlider.value = Math.min(state.s, 50000000);
             }
             if (state.st) {
                 stability = state.st;
@@ -417,7 +468,7 @@
 
     function syncStickyFromMain() {
         var val = parseSpend(monthlyInput.value);
-        stickySpend.value = Math.min(val, 5000000);
+        stickySpend.value = Math.min(val, 50000000);
         stickySpendVal.textContent = fmtShort(val);
         stickyCoverage.value = coverageSlider.value;
         stickyCoverageVal.textContent = coverageSlider.value + '%';
@@ -439,19 +490,17 @@
         calculate();
     });
 
-    if ('IntersectionObserver' in window) {
-        var observer = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    stickyBar.classList.remove('visible');
-                } else {
-                    syncStickyFromMain();
-                    stickyBar.classList.add('visible');
-                }
-            });
-        }, { threshold: 0, rootMargin: '-80px 0px 0px 0px' });
-        observer.observe(step1El);
-    }
+    window.addEventListener('scroll', function () {
+        var rect = step1El.getBoundingClientRect();
+        if (rect.bottom < 0) {
+            if (!stickyBar.classList.contains('visible')) {
+                syncStickyFromMain();
+                stickyBar.classList.add('visible');
+            }
+        } else {
+            stickyBar.classList.remove('visible');
+        }
+    });
 
     var origCalc = calculate;
     calculate = function () {
